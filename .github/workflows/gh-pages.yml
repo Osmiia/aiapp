@@ -1,0 +1,44 @@
+name: Deploy Go App to GitHub Pages
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+      - name: Install dependencies
+        run: go mod tidy
+      - name: Run Tests
+        run: go test ./...
+      - name: Build static site (if applicable)
+        run: |
+          mkdir -p gh-pages
+          echo "<html><body><h1>Go Gin API up & running!</h1><p>Endpoints: /api/health, /api/data, /api/data/:id</p></body></html>" > gh-pages/index.html
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: gh-pages
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v3
